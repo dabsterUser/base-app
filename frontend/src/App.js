@@ -4,8 +4,13 @@ import { AuthProvider } from './AuthContext';
 import PrivateRoute from './PrivateRoute';
 import Login from './Login';
 import FormBuilder from './FormBuilder';
+import { Button } from './components/ui/button';
+import { supabase } from './supabaseClient';
+import { LogOut, LayoutDashboard, FileText } from 'lucide-react';
 
 function App() {
+  const handleLogout = () => supabase.auth.signOut();
+
   return (
     <AuthProvider>
       <Router>
@@ -15,12 +20,46 @@ function App() {
             path="/"
             element={
               <PrivateRoute>
-                <div className="p-8">
-                  <h1 className="text-3xl font-bold">Dashboard</h1>
-                  <p>Welcome to the Base App</p>
-                  <div className="mt-8">
-                    <FormBuilder />
-                  </div>
+                <div className="min-h-screen bg-slate-50 flex">
+                  {/* Sidebar */}
+                  <aside className="w-64 bg-white border-r p-6 flex flex-col">
+                    <div className="flex items-center gap-2 font-bold text-xl mb-8">
+                      <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
+                        B
+                      </div>
+                      BaseApp
+                    </div>
+
+                    <nav className="flex-1 space-y-2">
+                      <Button variant="ghost" className="w-full justify-start" asChild>
+                        <a href="/">
+                          <LayoutDashboard className="w-4 h-4 mr-2" />
+                          Dashboard
+                        </a>
+                      </Button>
+                      <Button variant="ghost" className="w-full justify-start">
+                        <FileText className="w-4 h-4 mr-2" />
+                        My Forms
+                      </Button>
+                    </nav>
+
+                    <Button variant="outline" className="w-full justify-start mt-auto" onClick={handleLogout}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Logout
+                    </Button>
+                  </aside>
+
+                  {/* Main Content */}
+                  <main className="flex-1 p-8 overflow-y-auto">
+                    <div className="max-w-4xl mx-auto space-y-8">
+                      <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+                        <p className="text-muted-foreground">Manage your forms and view submissions.</p>
+                      </div>
+
+                      <FormBuilder />
+                    </div>
+                  </main>
                 </div>
               </PrivateRoute>
             }
