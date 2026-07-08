@@ -3,9 +3,10 @@ import { supabase } from './supabaseClient';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Signup = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -13,10 +14,15 @@ const Signup = () => {
   const handleSignup = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     setIsLoading(false);
-    if (error) alert(error.message);
-    else alert('Check your email for confirmation!');
+    if (error) {
+        alert(error.message);
+    } else if (data.session) {
+        navigate('/');
+    } else {
+        alert('Check your email for confirmation!');
+    }
   };
 
   return (
