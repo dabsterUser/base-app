@@ -3,7 +3,10 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './AuthContext';
 import PrivateRoute from './PrivateRoute';
 import Login from './Login';
+import Signup from './Signup';
 import FormBuilder from './FormBuilder';
+import Notifications from './Notifications';
+import ActivityLogs from './ActivityLogs';
 import { Button } from './components/ui/button';
 import { supabase } from './supabaseClient';
 import { LogOut, LayoutDashboard, FileText } from 'lucide-react';
@@ -16,6 +19,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
           <Route
             path="/"
             element={
@@ -37,9 +41,11 @@ function App() {
                           Dashboard
                         </a>
                       </Button>
-                      <Button variant="ghost" className="w-full justify-start">
-                        <FileText className="w-4 h-4 mr-2" />
-                        My Forms
+                      <Button variant="ghost" className="w-full justify-start" asChild>
+                        <a href="/logs">
+                          <FileText className="w-4 h-4 mr-2" />
+                          Activity Logs
+                        </a>
                       </Button>
                     </nav>
 
@@ -52,12 +58,18 @@ function App() {
                   {/* Main Content */}
                   <main className="flex-1 p-8 overflow-y-auto">
                     <div className="max-w-4xl mx-auto space-y-8">
-                      <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-                        <p className="text-muted-foreground">Manage your forms and view submissions.</p>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+                          <p className="text-muted-foreground">Manage your forms and view submissions.</p>
+                        </div>
+                        <Notifications />
                       </div>
 
-                      <FormBuilder />
+                      <Routes>
+                        <Route path="/" element={<FormBuilder />} />
+                        <Route path="/logs" element={<ActivityLogs />} />
+                      </Routes>
                     </div>
                   </main>
                 </div>

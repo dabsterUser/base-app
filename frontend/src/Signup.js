@@ -5,37 +5,31 @@ import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Link } from 'react-router-dom';
 
-const Login = () => {
+const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signUp({ email, password });
     setIsLoading(false);
     if (error) alert(error.message);
-  };
-
-  const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-    });
-    if (error) alert(error.message);
+    else alert('Check your email for confirmation!');
   };
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-black text-white p-4 font-sans">
       <div className="w-full max-w-[400px] bg-[#1c1c1c] p-8 rounded-2xl border border-[#2e2e2e] shadow-2xl">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight mb-2 text-white">Login to your account</h1>
+          <h1 className="text-2xl font-semibold tracking-tight mb-2 text-white">Create an account</h1>
           <p className="text-sm text-gray-400">
-            Enter your email below to login to your account
+            Enter your email below to create your account
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleSignup} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-sm font-medium text-gray-200">Email</Label>
             <Input
@@ -50,10 +44,7 @@ const Login = () => {
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label htmlFor="password" name="password" className="text-sm font-medium text-gray-200">Password</Label>
-              <a href="#" className="text-sm text-gray-200 hover:underline">Forgot your password?</a>
-            </div>
+            <Label htmlFor="password" name="password" className="text-sm font-medium text-gray-200">Password</Label>
             <Input
               id="password"
               type="password"
@@ -69,26 +60,17 @@ const Login = () => {
             type="submit"
             disabled={isLoading}
           >
-            {isLoading ? "Logging in..." : "Login"}
-          </Button>
-
-          <Button
-            variant="outline"
-            className="w-full bg-transparent border-[#3a3a3a] hover:bg-[#262626] text-white font-medium h-11 rounded-lg"
-            onClick={handleGoogleLogin}
-            type="button"
-          >
-            Login with Google
+            {isLoading ? "Creating account..." : "Sign up"}
           </Button>
         </form>
 
         <div className="mt-8 text-center text-sm">
-          <span className="text-gray-400">Don't have an account? </span>
-          <Link to="/signup" className="text-white hover:underline">Sign up</Link>
+          <span className="text-gray-400">Already have an account? </span>
+          <Link to="/login" className="text-white hover:underline">Login</Link>
         </div>
       </div>
     </div>
   );
 };
 
-export default Login;
+export default Signup;
