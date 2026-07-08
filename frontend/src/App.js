@@ -7,11 +7,14 @@ import Signup from './Signup';
 import FormBuilder from './FormBuilder';
 import Notifications from './Notifications';
 import ActivityLogs from './ActivityLogs';
+import UsersList from './UsersList';
 import { Button } from './components/ui/button';
 import { supabase } from './supabaseClient';
-import { LogOut, LayoutDashboard, FileText } from 'lucide-react';
+import { LogOut, LayoutDashboard, FileText, Users, Activity } from 'lucide-react';
+import { useAuth } from './AuthContext';
 
 function App() {
+  const { role } = useAuth();
   const handleLogout = () => supabase.auth.signOut();
 
   return (
@@ -41,12 +44,22 @@ function App() {
                           Dashboard
                         </a>
                       </Button>
-                      <Button variant="ghost" className="w-full justify-start" asChild>
-                        <a href="/logs">
-                          <FileText className="w-4 h-4 mr-2" />
-                          Activity Logs
-                        </a>
-                      </Button>
+                      {role === 'admin' && (
+                        <>
+                          <Button variant="ghost" className="w-full justify-start" asChild>
+                            <a href="/logs">
+                              <Activity className="w-4 h-4 mr-2" />
+                              Activity Logs
+                            </a>
+                          </Button>
+                          <Button variant="ghost" className="w-full justify-start" asChild>
+                            <a href="/users">
+                              <Users className="w-4 h-4 mr-2" />
+                              Users
+                            </a>
+                          </Button>
+                        </>
+                      )}
                     </nav>
 
                     <Button variant="outline" className="w-full justify-start mt-auto" onClick={handleLogout}>
@@ -69,6 +82,7 @@ function App() {
                       <Routes>
                         <Route path="/" element={<FormBuilder />} />
                         <Route path="/logs" element={<ActivityLogs />} />
+                        <Route path="/users" element={<UsersList />} />
                       </Routes>
                     </div>
                   </main>

@@ -19,11 +19,11 @@ export class RolesGuard implements CanActivate {
         return false;
     }
 
-    // In a real scenario, we would fetch the user's role from the 'user_roles' table in Supabase
+    // Fetch the user's role from the 'profiles' table in Supabase
     const { data, error } = await this.supabaseService.getClient()
-      .from('user_roles')
+      .from('profiles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
 
     if (error || !data) {

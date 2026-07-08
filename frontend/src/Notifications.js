@@ -19,7 +19,7 @@ const Notifications = () => {
     if (!token) return;
 
     try {
-      const res = await axios.get('http://localhost:3000/notifications', {
+      const res = await axios.get(process.env.REACT_APP_API_URL + '/notifications', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNotifications(res.data);
@@ -33,7 +33,7 @@ const Notifications = () => {
     const token = session.data.session?.access_token;
 
     try {
-      await axios.patch(`http://localhost:3000/notifications/${id}/read`, {}, {
+      await axios.patch(`${process.env.REACT_APP_API_URL}/notifications/${id}/read`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchNotifications();

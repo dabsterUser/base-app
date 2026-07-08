@@ -13,11 +13,12 @@ export class ActivityLogInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap(async () => {
-        if (user && method !== 'GET') {
+        const currentUser = request.user;
+        if (currentUser && method !== 'GET') {
           await this.supabaseService.getClient()
             .from('activity_logs')
             .insert([{
-              user_id: user.id,
+              user_id: currentUser.id,
               action: `${method} ${url}`,
               details: body,
             }]);
