@@ -12,9 +12,13 @@ export class UsersController {
   @Get()
   @Roles('admin')
   async findAll() {
+    // Joining with profiles to get the creator's email
     const { data, error } = await this.supabaseService.getClient()
       .from('profiles')
-      .select('*, created_by:created_by_id(email)');
+      .select(`
+        *,
+        creator:profiles!created_by_id(email)
+      `);
     if (error) throw error;
     return data;
   }

@@ -47,7 +47,7 @@ const UsersList = () => {
                 <TableRow key={user.id}>
                   <TableCell>{user.email}</TableCell>
                   <TableCell className="capitalize">{user.role}</TableCell>
-                  <TableCell>{user.created_by?.email || 'System'}</TableCell>
+                  <TableCell>{user.creator?.email || 'System'}</TableCell>
                   <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                 </TableRow>
               ))}

@@ -15,13 +15,17 @@ export class ActivityLogInterceptor implements NestInterceptor {
       tap(async () => {
         const currentUser = request.user;
         if (currentUser && method !== 'GET') {
-          await this.supabaseService.getClient()
+          const { error } = await this.supabaseService.getClient()
             .from('activity_logs')
             .insert([{
               user_id: currentUser.id,
               action: `${method} ${url}`,
               details: body,
             }]);
+
+          if (error) {
+            console.error('Failed to log activity:', error);
+          }
         }
       }),
     );
