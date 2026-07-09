@@ -29,7 +29,7 @@ const FormBuilder = () => {
     const token = session.data.session?.access_token;
 
     try {
-      await axios.post('http://localhost:3000/forms', {
+      await axios.post(process.env.REACT_APP_API_URL + '/forms', {
         title,
         description,
         fields,

@@ -16,7 +16,7 @@ const ActivityLogs = () => {
     if (!token) return;
 
     try {
-      const res = await axios.get('http://localhost:3000/activity-logs', {
+      const res = await axios.get(process.env.REACT_APP_API_URL + '/activity-logs', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setLogs(res.data);

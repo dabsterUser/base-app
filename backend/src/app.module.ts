@@ -6,6 +6,7 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { FormsModule } from './forms/forms.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
+import { UsersModule } from './users/users.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ActivityLogInterceptor } from './common/interceptors/activity-log.interceptor';
 
@@ -16,6 +17,7 @@ import { ActivityLogInterceptor } from './common/interceptors/activity-log.inter
     FormsModule,
     NotificationsModule,
     ActivityLogsModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [
