@@ -10,7 +10,7 @@ import ActivityLogs from './ActivityLogs';
 import UsersList from './UsersList';
 import { Button } from './components/ui/button';
 import { supabase } from './supabaseClient';
-import { LogOut, LayoutDashboard, FileText, Users, Activity } from 'lucide-react';
+import { LogOut, LayoutDashboard, FileText, Users, Activity, ChevronRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from './AuthContext';
 
 const DashboardLayout = ({ children }) => {
@@ -28,28 +28,45 @@ const DashboardLayout = ({ children }) => {
           BaseApp
         </div>
 
-        <nav className="flex-1 space-y-2">
-          <Button variant="ghost" className="w-full justify-start" asChild>
-            <a href="/">
-              <LayoutDashboard className="w-4 h-4 mr-2" />
-              Dashboard
-            </a>
-          </Button>
+        <nav className="flex-1 space-y-4">
+          <div>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-4">
+              Core
+            </p>
+            <div className="space-y-1">
+              <Button variant="ghost" className="w-full justify-start font-medium" asChild>
+                <a href="/">
+                  <LayoutDashboard className="w-4 h-4 mr-3 text-blue-500" />
+                  Dashboard
+                </a>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start font-medium">
+                <FileText className="w-4 h-4 mr-3 text-orange-500" />
+                My Forms
+              </Button>
+            </div>
+          </div>
+
           {role === 'admin' && (
-            <>
-              <Button variant="ghost" className="w-full justify-start" asChild>
-                <a href="/logs">
-                  <Activity className="w-4 h-4 mr-2" />
-                  Activity Logs
-                </a>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start" asChild>
-                <a href="/users">
-                  <Users className="w-4 h-4 mr-2" />
-                  Users
-                </a>
-              </Button>
-            </>
+            <div>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-4">
+                Administration
+              </p>
+              <div className="space-y-1 pl-2 border-l ml-4">
+                <Button variant="ghost" className="w-full justify-start text-sm" asChild>
+                  <a href="/logs">
+                    <Activity className="w-3.5 h-3.5 mr-3 text-indigo-500" />
+                    Activity Logs
+                  </a>
+                </Button>
+                <Button variant="ghost" className="w-full justify-start text-sm" asChild>
+                  <a href="/users">
+                    <ShieldCheck className="w-3.5 h-3.5 mr-3 text-emerald-500" />
+                    Users, Roles & Permissions
+                  </a>
+                </Button>
+              </div>
+            </div>
           )}
         </nav>
 

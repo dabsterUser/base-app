@@ -46,17 +46,22 @@ const Notifications = () => {
 
   return (
     <div className="relative">
-      <Button variant="ghost" size="icon" className="relative" onClick={() => setIsOpen(!isOpen)}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`relative ${unreadCount > 0 ? 'text-blue-600' : 'text-slate-500'}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+          <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-white">
             {unreadCount}
           </span>
         )}
       </Button>
 
       {isOpen && (
-        <Card className="absolute right-0 mt-2 w-80 shadow-xl z-50">
+        <Card className="absolute right-0 mt-2 w-80 shadow-2xl z-50 border-slate-200">
           <CardHeader className="p-4">
             <CardTitle className="text-sm font-bold">Notifications</CardTitle>
           </CardHeader>

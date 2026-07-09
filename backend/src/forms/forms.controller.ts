@@ -42,11 +42,32 @@ export class FormsController {
 
   @Post(':id/submissions')
   async submit(@Param('id') id: string, @Body() body: any, @Request() req: any) {
-    const { data, error } = await this.supabaseService.getClient()
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
       .from('form_submissions')
       .insert([{ form_id: id, user_id: req.user.id, data: body }])
-      .select();
+      .select()
+      .single();
+
     if (error) throw error;
+
+    // Create a notification for the form owner (simplified here as user_id of the form)
+    const { data: formData } = await supabase
+      .from('forms')
+      .select('user_id, title')
+      .eq('id', id)
+      .single();
+
+    if (formData) {
+      await supabase
+        .from('notifications')
+        .insert([{
+          user_id: formData.user_id,
+          message: `New submission received for form: ${formData.title}`,
+        }]);
+    }
+
     return data;
   }
 }
