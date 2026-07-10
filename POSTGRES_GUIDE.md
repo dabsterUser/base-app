@@ -4,66 +4,106 @@ This guide provides common PostgreSQL commands and schema definitions for the Ba
 
 ## Table Definitions
 
-### 1. profiles
-Stores user-specific metadata including roles.
+### 1. Core Auth & RBAC
 ```sql
+-- Profiles (User Metadata)
 CREATE TABLE public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
-  role TEXT DEFAULT 'user' CHECK (role IN ('admin', 'user')),
+  email TEXT NOT NULL UNIQUE,
+  name TEXT,
+  phone TEXT,
+  profile_image TEXT,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'blocked')),
+  last_login TIMESTAMP WITH TIME ZONE,
+  role_id UUID, -- References roles(id) later
   created_by_id UUID REFERENCES auth.users(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  deleted_at TIMESTAMP WITH TIME ZONE
 );
 
--- Enable RLS
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+-- Roles
+CREATE TABLE public.roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL UNIQUE,
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
 
--- Allow users to read their own profile
-CREATE POLICY "Users can view own profile" ON public.profiles
-  FOR SELECT USING (auth.uid() = id);
+-- Permissions
+CREATE TABLE public.permissions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL UNIQUE, -- e.g., 'users.view'
+  module TEXT NOT NULL,
+  action TEXT NOT NULL
+);
 
--- Allow admins to view all profiles
-CREATE POLICY "Admins can view all profiles" ON public.profiles
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
-    )
-  );
+-- Role-Permission Mapping
+CREATE TABLE public.role_permissions (
+  role_id UUID REFERENCES public.roles(id) ON DELETE CASCADE,
+  permission_id UUID REFERENCES public.permissions(id) ON DELETE CASCADE,
+  PRIMARY KEY (role_id, permission_id)
+);
+
+-- User-Permission Mapping (Overrides)
+CREATE TABLE public.user_permissions (
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  permission_id UUID REFERENCES public.permissions(id) ON DELETE CASCADE,
+  type TEXT DEFAULT 'allow' CHECK (type IN ('allow', 'deny')),
+  PRIMARY KEY (user_id, permission_id)
+);
+
+-- Add foreign key back to profiles for role
+ALTER TABLE public.profiles ADD CONSTRAINT fk_profiles_role FOREIGN KEY (role_id) REFERENCES public.roles(id);
 ```
 
-### 2. activity_logs
-Tracks user actions.
+### 2. Activity Logs
 ```sql
 CREATE TABLE public.activity_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  module TEXT NOT NULL,
   action TEXT NOT NULL,
+  description TEXT,
+  ip_address TEXT,
+  browser TEXT,
+  device TEXT,
   details JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
-
--- Admins only policy
-ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Admins can view activity logs" ON public.activity_logs
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
-    )
-  );
 ```
 
-### 3. forms & form_submissions
-Core form builder tables.
+### 3. Form Builder System
 ```sql
 CREATE TABLE public.forms (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   description TEXT,
-  fields JSONB NOT NULL,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'unpublished')),
+  version INTEGER DEFAULT 1,
+  user_id UUID REFERENCES auth.users(id) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE TABLE public.form_fields (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  form_id UUID REFERENCES public.forms(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  label TEXT NOT NULL,
+  placeholder TEXT,
+  description TEXT,
+  default_value TEXT,
+  required BOOLEAN DEFAULT false,
+  readonly BOOLEAN DEFAULT false,
+  disabled BOOLEAN DEFAULT false,
+  validation JSONB,
+  settings JSONB,
+  "order" INTEGER NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
 CREATE TABLE public.form_submissions (
@@ -71,44 +111,51 @@ CREATE TABLE public.form_submissions (
   form_id UUID REFERENCES public.forms(id) ON DELETE CASCADE,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   data JSONB NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+  status TEXT DEFAULT 'submitted' CHECK (status IN ('draft', 'submitted')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 ```
 
-### 4. notifications
+### 4. Notifications & Settings
 ```sql
 CREATE TABLE public.notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL, -- 'system', 'user', 'form'
   message TEXT NOT NULL,
   read BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE public.settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  key TEXT NOT NULL UNIQUE,
+  value TEXT NOT NULL,
+  "group" TEXT DEFAULT 'general',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 ```
 
 ## Useful Commands
 
-### 1. Assign Admin Role to a User
-Replace `user_id_here` with the actual UUID from `auth.users`.
+### 1. Seed Initial RBAC Data
 ```sql
-UPDATE public.profiles
-SET role = 'admin'
-WHERE id = 'user_id_here';
+-- Create Default Roles
+INSERT INTO public.roles (name, description) VALUES
+('Super Admin', 'Full access to the system'),
+('User', 'Regular user access');
+
+-- Create Basic Permissions
+INSERT INTO public.permissions (name, module, action) VALUES
+('users.view', 'users', 'view'),
+('users.create', 'users', 'create'),
+('forms.manage', 'forms', 'manage');
 ```
 
-### 2. View All Activity Logs
+### 2. Enable RLS (Recommended)
 ```sql
-SELECT * FROM public.activity_logs ORDER BY created_at DESC;
-```
-
-### 3. Check Table Schema
-```sql
-\d profiles
-```
-
-### 4. Count Form Submissions per Form
-```sql
-SELECT form_id, count(*)
-FROM public.form_submissions
-GROUP BY form_id;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
 ```

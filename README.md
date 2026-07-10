@@ -64,25 +64,40 @@ Create the following tables in your Supabase project:
    - `read`: boolean (default: false)
    - `created_at`: timestamp
 
-### Backend Setup
+### Quick Start (Recommended)
 
+1. **Install all dependencies:**
+   ```bash
+   npm run install:all
+   ```
+
+2. **Configure Environment Variables:**
+   - In `backend/.env`:
+     ```
+     DATABASE_URL="postgresql://..."
+     SUPABASE_URL="https://your-project.supabase.co"
+     SUPABASE_KEY="your-anon-key"
+     ```
+   - In `frontend/.env`:
+     ```
+     VITE_SUPABASE_URL="https://your-project.supabase.co"
+     VITE_SUPABASE_ANON_KEY="your-anon-key"
+     VITE_API_URL="http://localhost:3000"
+     ```
+
+3. **Run both Backend and Frontend concurrently:**
+   ```bash
+   npm run dev
+   ```
+
+### Individual Service Setup
+
+#### Backend
 1. `cd backend`
 2. `npm install`
-3. Create a `.env` file with:
-   ```
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_KEY=your_supabase_anon_key
-   ```
-4. `npm run start:dev`
+3. `npm run start:dev`
 
-### Frontend Setup
-
+#### Frontend
 1. `cd frontend`
 2. `npm install`
-3. Create a `.env` file with:
-   ```
-   REACT_APP_SUPABASE_URL=your_supabase_url
-   REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
-   REACT_APP_API_URL=http://localhost:3000
-   ```
-4. `npm start`
+3. `npm run dev`

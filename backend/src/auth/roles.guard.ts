@@ -1,10 +1,10 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { SupabaseService } from '../supabase/supabase.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector, private supabaseService: SupabaseService) {}
+  constructor(private reflector: Reflector, private prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredRoles = this.reflector.get<string[]>('roles', context.getHandler());
@@ -19,17 +19,16 @@ export class RolesGuard implements CanActivate {
         return false;
     }
 
-    // Fetch the user's role from the 'profiles' table in Supabase
-    const { data, error } = await this.supabaseService.getClient()
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
+    // Fetch user with role
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      include: { role: true }
+    });
 
-    if (error || !data) {
+    if (!dbUser) {
       throw new ForbiddenException('User roles not found');
     }
 
-    return requiredRoles.includes(data.role);
+    return requiredRoles.includes(dbUser.role?.name.toLowerCase());
   }
 }

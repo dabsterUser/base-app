@@ -8,6 +8,8 @@ import { FormsModule } from './forms/forms.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { UsersModule } from './users/users.module';
+import { StorageModule } from './storage/storage.module';
+import { SettingsModule } from './settings/settings.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ActivityLogInterceptor } from './common/interceptors/activity-log.interceptor';
 
@@ -20,6 +22,8 @@ import { ActivityLogInterceptor } from './common/interceptors/activity-log.inter
     NotificationsModule,
     ActivityLogsModule,
     UsersModule,
+    StorageModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [

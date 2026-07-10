@@ -20,7 +20,7 @@ export class PermissionsGuard implements CanActivate {
     }
 
     // Fetch user with roles and permissions
-    const dbUser = await this.prisma.user.findUnique({
+    let dbUser = await this.prisma.user.findUnique({
       where: { id: user.id },
       include: {
         role: {
@@ -41,7 +41,34 @@ export class PermissionsGuard implements CanActivate {
     });
 
     if (!dbUser) {
-      return false;
+      // Auto-create profile if missing (fallback for Supabase Auth users)
+      try {
+        dbUser = await this.prisma.user.create({
+          data: {
+            id: user.id,
+            email: user.email,
+            roleId: (await this.prisma.role.findFirst({ where: { name: 'user' } }))?.id
+          },
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true
+                  }
+                }
+              }
+            },
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        });
+      } catch (e) {
+        return false;
+      }
     }
 
     // Check direct user permissions (User Permission > Role Permission)

@@ -21,12 +21,16 @@ export class UsersController {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
 
-    const where = search ? {
-      OR: [
-        { name: { contains: search, mode: 'insensitive' as any } },
-        { email: { contains: search, mode: 'insensitive' as any } },
-      ]
-    } : {};
+    const where: any = {
+      deletedAt: null,
+    };
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.user.findMany({
