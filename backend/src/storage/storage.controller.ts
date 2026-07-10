@@ -2,7 +2,7 @@ import { Controller, Post, UseInterceptors, UploadedFile, UseGuards, Get, Param,
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SupabaseGuard } from '../auth/supabase.guard';
 import { SupabaseService } from '../supabase/supabase.service';
-import { Response } from 'express';
+import type { Response } from 'express';
 
 @Controller('storage')
 @UseGuards(SupabaseGuard)

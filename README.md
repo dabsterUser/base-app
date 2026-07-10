@@ -24,6 +24,27 @@ This project is a base application boilerplate built with **React**, **NestJS**,
 - Node.js (v18+)
 - Supabase account and project.
 
+### PostgreSQL Connection Setup
+
+To connect your backend to PostgreSQL, follow these steps:
+
+1. **Database URL**: In `backend/.env`, set the `DATABASE_URL` variable.
+   - If using Supabase: Go to Project Settings -> Database -> Connection string -> Prisma.
+   - Format: `postgresql://postgres:[YOUR-PASSWORD]@[YOUR-HOST]:5432/postgres`
+
+2. **Prisma Synchronization**:
+   Run the following commands in the `backend` directory:
+   ```bash
+   # Generate Prisma client
+   npx prisma generate
+
+   # Push schema to database (for development)
+   npx prisma db push
+   ```
+
+3. **Database Schema**:
+   The `POSTGRES_GUIDE.md` file contains SQL scripts to initialize necessary tables and RBAC data if you are starting with a fresh database.
+
 ### Supabase Setup
 
 Create the following tables in your Supabase project:

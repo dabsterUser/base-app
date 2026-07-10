@@ -25,10 +25,10 @@ export class RolesGuard implements CanActivate {
       include: { role: true }
     });
 
-    if (!dbUser) {
+    if (!dbUser || !dbUser.role) {
       throw new ForbiddenException('User roles not found');
     }
 
-    return requiredRoles.includes(dbUser.role?.name.toLowerCase());
+    return requiredRoles.includes(dbUser.role.name.toLowerCase());
   }
 }
