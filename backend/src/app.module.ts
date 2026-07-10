@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SupabaseModule } from './supabase/supabase.module';
+import { PrismaModule } from './prisma/prisma.module';
 import { FormsModule } from './forms/forms.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
@@ -13,6 +14,7 @@ import { ActivityLogInterceptor } from './common/interceptors/activity-log.inter
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
     SupabaseModule,
     FormsModule,
     NotificationsModule,

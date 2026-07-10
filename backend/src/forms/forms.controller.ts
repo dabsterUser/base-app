@@ -1,73 +1,69 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseGuard } from '../auth/supabase.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import { SupabaseService } from '../supabase/supabase.service';
+import { PermissionsGuard } from '../auth/permissions.guard';
+import { CheckPermission } from '../auth/permissions.decorator';
 
 @Controller('forms')
-@UseGuards(SupabaseGuard, RolesGuard)
+@UseGuards(SupabaseGuard, PermissionsGuard)
 export class FormsController {
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(private prisma: PrismaService) {}
 
   @Get()
+  @CheckPermission('forms.view')
   async findAll() {
-    const { data, error } = await this.supabaseService.getClient()
-      .from('forms')
-      .select('*');
-    if (error) throw error;
-    return data;
+    return this.prisma.form.findMany({
+      include: { user: { select: { name: true, email: true } } }
+    });
   }
 
   @Post()
-  @Roles('admin')
+  @CheckPermission('forms.create')
   async create(@Body() body: any, @Request() req: any) {
-    const { data, error } = await this.supabaseService.getClient()
-      .from('forms')
-      .insert([{ ...body, user_id: req.user.id }])
-      .select();
-    if (error) throw error;
-    return data;
+    const { fields, ...formData } = body;
+    return this.prisma.form.create({
+      data: {
+        ...formData,
+        userId: req.user.id,
+        fields: {
+          create: fields.map((field: any, index: number) => ({
+            ...field,
+            order: index,
+          }))
+        }
+      },
+      include: { fields: true }
+    });
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    const { data, error } = await this.supabaseService.getClient()
-      .from('forms')
-      .select('*')
-      .eq('id', id)
-      .single();
-    if (error) throw error;
-    return data;
+    return this.prisma.form.findUnique({
+      where: { id },
+      include: { fields: true }
+    });
   }
 
-  @Post(':id/submissions')
-  async submit(@Param('id') id: string, @Body() body: any, @Request() req: any) {
-    const supabase = this.supabaseService.getClient();
+  @Put(':id')
+  @CheckPermission('forms.edit')
+  async update(@Param('id') id: string, @Body() body: any) {
+    const { fields, ...formData } = body;
 
-    const { data, error } = await supabase
-      .from('form_submissions')
-      .insert([{ form_id: id, user_id: req.user.id, data: body }])
-      .select()
-      .single();
+    // Simple update logic: delete old fields and recreate new ones for versioning/simplicity
+    await this.prisma.formField.deleteMany({ where: { formId: id } });
 
-    if (error) throw error;
-
-    // Create a notification for the form owner (simplified here as user_id of the form)
-    const { data: formData } = await supabase
-      .from('forms')
-      .select('user_id, title')
-      .eq('id', id)
-      .single();
-
-    if (formData) {
-      await supabase
-        .from('notifications')
-        .insert([{
-          user_id: formData.user_id,
-          message: `New submission received for form: ${formData.title}`,
-        }]);
-    }
-
-    return data;
+    return this.prisma.form.update({
+      where: { id },
+      data: {
+        ...formData,
+        fields: {
+          create: fields.map((field: any, index: number) => ({
+            ...field,
+            order: index,
+          }))
+        }
+      },
+      include: { fields: true }
+    });
   }
 }

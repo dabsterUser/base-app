@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  phone         String?
+  profileImage  String?
+  status        String    @default("active") // active, inactive, blocked
+  lastLogin     DateTime?
+  createdById   String?
+  creator       User?     @relation("UserToCreator", fields: [createdById], references: [id])
+  createdUsers  User[]    @relation("UserToCreator")
+
+  roleId        String?
+  role          Role?     @relation(fields: [roleId], references: [id])
+
+  permissions   UserPermission[]
+
+  forms         Form[]
+  submissions   FormSubmission[]
+  activities    ActivityLog[]
+  notifications Notification[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  @@map("profiles")
+}
+
+model Role {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  description String?
+  permissions RolePermission[]
+  users       User[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  name        String           @unique // e.g., "users.view", "forms.create"
+  module      String           // e.g., "users", "forms"
+  action      String           // e.g., "view", "create", "edit", "delete"
+  roles       RolePermission[]
+  users       UserPermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserPermission {
+  userId       String
+  permissionId String
+  type         String     @default("allow") // allow, deny
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionId])
+  @@map("user_permissions")
+}
+
+model Form {
+  id          String           @id @default(uuid())
+  title       String
+  description String?
+  status      String           @default("draft") // draft, published, unpublished
+  version     Int              @default(1)
+  fields      FormField[]
+  submissions FormSubmission[]
+  userId      String
+  user        User             @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
+
+  @@map("forms")
+}
+
+model FormField {
+  id          String   @id @default(uuid())
+  formId      String
+  form        Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  type        String   // text, textarea, email, etc.
+  label       String
+  placeholder String?
+  description String?
+  defaultValue String?
+  required    Boolean  @default(false)
+  readonly    Boolean  @default(false)
+  disabled    Boolean  @default(false)
+  validation  Json?    // rules like min, max, regex
+  settings    Json?    // conditional visibility, css class, width
+  order       Int
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("form_fields")
+}
+
+model FormSubmission {
+  id        String   @id @default(uuid())
+  formId    String
+  form      Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  data      Json
+  status    String   @default("submitted") // draft, submitted
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("form_submissions")
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SET NULL)
+  module      String
+  action      String
+  description String
+  ipAddress   String?
+  browser     String?
+  device      String?
+  details     Json?
+  createdAt   DateTime @default(now())
+
+  @@map("activity_logs")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // system, user, form, role
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  group     String   @default("general") // general, email, theme
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
