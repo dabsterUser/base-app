@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -134,11 +136,62 @@ const SortableItem = ({ field, onRemove, onUpdate }: {
 };
 
 const FormBuilderPage = () => {
+  const [formId, setFormId] = useState<string | null>(null);
   const [formTitle, setFormTitle] = useState('Untitled Application Form');
-  const [fields, setFields] = useState<FormField[]>([
-    { id: '1', type: 'text', label: 'Candidate Name', placeholder: 'Full legal name', required: true },
-    { id: '2', type: 'select', label: 'Department', options: ['Engineering', 'Sales', 'Product', 'Design'], required: true }
-  ]);
+  const [fields, setFields] = useState<FormField[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    // Load first existing form if available for demo purposes
+    fetchForm();
+  }, []);
+
+  const fetchForm = async () => {
+    try {
+      const session = await supabase.auth.getSession();
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/forms`, {
+        headers: { Authorization: `Bearer ${session.data.session?.access_token}` }
+      });
+      const data = Array.isArray(res.data) ? res.data[0] : res.data.data?.[0];
+      if (data) {
+        setFormId(data.id);
+        setFormTitle(data.title);
+        // Map backend fields to frontend structure if necessary
+        setFields(data.fields || []);
+      }
+    } catch (err) {
+      console.error('Error fetching form:', err);
+    }
+  };
+
+  const saveForm = async (status: 'draft' | 'published' = 'draft') => {
+    setIsSaving(true);
+    try {
+      const session = await supabase.auth.getSession();
+      const payload = {
+        title: formTitle,
+        fields: fields,
+        status: status
+      };
+
+      if (formId) {
+        await axios.put(`${import.meta.env.VITE_API_URL}/forms/${formId}`, payload, {
+          headers: { Authorization: `Bearer ${session.data.session?.access_token}` }
+        });
+      } else {
+        const res = await axios.post(`${import.meta.env.VITE_API_URL}/forms`, payload, {
+          headers: { Authorization: `Bearer ${session.data.session?.access_token}` }
+        });
+        setFormId(res.data.id);
+      }
+      alert('Form saved successfully!');
+    } catch (err) {
+      console.error('Error saving form:', err);
+      alert('Failed to save form.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -185,11 +238,20 @@ const FormBuilderPage = () => {
           <p className="text-muted-foreground">Dynamic schema generation for internal applications and surveys.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => saveForm('draft')}
+            disabled={isSaving}
+          >
             <Save className="h-4 w-4" />
-            Save Draft
+            {isSaving ? 'Saving...' : 'Save Draft'}
           </Button>
-          <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+          <Button
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+            onClick={() => saveForm('published')}
+            disabled={isSaving}
+          >
             <Wand2 className="h-4 w-4" />
             Deploy Form
           </Button>

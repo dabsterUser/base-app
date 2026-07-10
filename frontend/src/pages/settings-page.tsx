@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,11 +17,53 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const SettingsPage = () => {
+  const [settings, setSettings] = useState<any[]>([]);
+  const [localSettings, setLocalSettings] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleSave = () => {
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const session = await supabase.auth.getSession();
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/settings`, {
+        headers: { Authorization: `Bearer ${session.data.session?.access_token}` }
+      });
+      setSettings(res.data);
+
+      // Initialize local state
+      const initial: Record<string, string> = {};
+      res.data.forEach((s: any) => initial[s.key] = s.value);
+      setLocalSettings(initial);
+    } catch (err) {
+      console.error('Error fetching settings:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLocalChange = (key: string, value: string) => {
+    setLocalSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSave = async (key: string) => {
+    const value = localSettings[key];
     setIsSaving(true);
-    setTimeout(() => setIsSaving(false), 1000);
+    try {
+      const session = await supabase.auth.getSession();
+      await axios.put(`${import.meta.env.VITE_API_URL}/settings/${key}`, { value }, {
+        headers: { Authorization: `Bearer ${session.data.session?.access_token}` }
+      });
+      alert('Setting updated!');
+    } catch (err) {
+      console.error('Error saving setting:', err);
+      alert('Failed to update setting.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -52,17 +96,34 @@ const SettingsPage = () => {
               <CardDescription>Basic information about your instance.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="site_name">Site Name</Label>
-                <Input id="site_name" defaultValue="Base Application Enterprise" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="support_email">Support Contact Email</Label>
-                <Input id="support_email" defaultValue="support@company.com" />
-              </div>
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </Button>
+              {isLoading ? (
+                <p>Loading settings...</p>
+              ) : (
+                <>
+                  <div className="grid gap-2">
+                    <Label htmlFor="site_name">Site Name</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="site_name"
+                        value={localSettings['site_name'] || ''}
+                        onChange={(e) => handleLocalChange('site_name', e.target.value)}
+                      />
+                      <Button onClick={() => handleSave('site_name')} disabled={isSaving}>Update</Button>
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="support_email">Support Contact Email</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="support_email"
+                        value={localSettings['support_email'] || ''}
+                        onChange={(e) => handleLocalChange('support_email', e.target.value)}
+                      />
+                      <Button onClick={() => handleSave('support_email')} disabled={isSaving}>Update</Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

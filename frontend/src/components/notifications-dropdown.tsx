@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { supabase } from '@/lib/supabase';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,33 +22,6 @@ interface Notification {
   isRead: boolean;
 }
 
-const notifications: Notification[] = [
-  {
-    id: '1',
-    title: 'New User Registered',
-    message: 'johndoe@example.com has just joined the platform.',
-    type: 'INFO',
-    time: '2 mins ago',
-    isRead: false,
-  },
-  {
-    id: '2',
-    title: 'System Update',
-    message: 'Version 2.0.4 has been successfully deployed.',
-    type: 'SUCCESS',
-    time: '1 hour ago',
-    isRead: true,
-  },
-  {
-    id: '3',
-    title: 'Security Alert',
-    message: 'Multiple failed login attempts detected for user admin.',
-    type: 'WARNING',
-    time: '5 hours ago',
-    isRead: false,
-  }
-];
-
 const TypeIcon = ({ type }: { type: Notification['type'] }) => {
   switch (type) {
     case 'SUCCESS': return <CheckCircle className="h-4 w-4 text-emerald-500" />;
@@ -57,7 +32,34 @@ const TypeIcon = ({ type }: { type: Notification['type'] }) => {
 };
 
 export const NotificationDropdown = () => {
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const session = await supabase.auth.getSession();
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/notifications`, {
+        headers: { Authorization: `Bearer ${session.data.session?.access_token}` }
+      });
+      // Map backend schema to UI component schema
+      const mapped = res.data.map((n: any) => ({
+        id: n.id,
+        title: n.type.toUpperCase(),
+        message: n.message,
+        type: n.type === 'system' ? 'INFO' : 'SUCCESS',
+        time: new Date(n.created_at).toLocaleTimeString(),
+        isRead: n.read
+      }));
+      setNotifications(mapped);
+      setUnreadCount(mapped.filter((n: any) => !n.isRead).length);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  };
 
   return (
     <DropdownMenu>

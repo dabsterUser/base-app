@@ -30,7 +30,8 @@ const UsersPage = () => {
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUsers(res.data);
+      // Handle paginated response { data: [...], total: ... }
+      setUsers(res.data?.data || (Array.isArray(res.data) ? res.data : []));
     } catch (err) {
       console.error(err);
     } finally {
