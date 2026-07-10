@@ -1,32 +1,28 @@
-import { Controller, Get, Post, Body, UseGuards, Request, Patch, Param } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, Patch, Param } from '@nestjs/common';
 import { SupabaseGuard } from '../auth/supabase.guard';
-import { SupabaseService } from '../supabase/supabase.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('notifications')
 @UseGuards(SupabaseGuard)
 export class NotificationsController {
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(private prisma: PrismaService) {}
 
   @Get()
   async findAll(@Request() req: any) {
-    const { data, error } = await this.supabaseService.getClient()
-      .from('notifications')
-      .select('*')
-      .eq('user_id', req.user.id)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data;
+    return this.prisma.notification.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   @Patch(':id/read')
   async markAsRead(@Param('id') id: string, @Request() req: any) {
-    const { data, error } = await this.supabaseService.getClient()
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', id)
-      .eq('user_id', req.user.id)
-      .select();
-    if (error) throw error;
-    return data;
+    return this.prisma.notification.update({
+      where: {
+        id,
+        userId: req.user.id
+      },
+      data: { read: true },
+    });
   }
 }
