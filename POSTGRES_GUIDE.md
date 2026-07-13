@@ -151,7 +151,24 @@ INSERT INTO public.roles (name, description) VALUES
 INSERT INTO public.permissions (name, module, action) VALUES
 ('users.view', 'users', 'view'),
 ('users.create', 'users', 'create'),
-('forms.manage', 'forms', 'manage');
+('users.edit', 'users', 'edit'),
+('users.delete', 'users', 'delete'),
+('forms.view', 'forms', 'view'),
+('forms.create', 'forms', 'create'),
+('forms.edit', 'forms', 'edit'),
+('forms.delete', 'forms', 'delete'),
+('settings.view', 'settings', 'view'),
+('settings.edit', 'settings', 'edit');
+
+-- Map all permissions to Super Admin
+INSERT INTO public.role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM public.roles r, public.permissions p
+WHERE r.name = 'Super Admin';
+
+-- Map view permissions to User
+INSERT INTO public.role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM public.roles r, public.permissions p
+WHERE r.name = 'User' AND p.name IN ('forms.view', 'settings.view');
 ```
 
 ### 2. Enable RLS (Recommended)

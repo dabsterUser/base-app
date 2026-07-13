@@ -26,9 +26,11 @@ export class RolesGuard implements CanActivate {
     });
 
     if (!dbUser || !dbUser.role) {
-      throw new ForbiddenException('User roles not found');
+      // Temporary fallback for first-time login if profile auto-creation hasn't finished
+      return false;
     }
 
-    return requiredRoles.includes(dbUser.role.name.toLowerCase());
+    const userRole = dbUser.role.name.toLowerCase();
+    return requiredRoles.some(role => role.toLowerCase() === userRole);
   }
 }

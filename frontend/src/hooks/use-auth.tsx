@@ -32,8 +32,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setProfile(data);
+        const text = await response.text();
+        if (text) {
+          const data = JSON.parse(text);
+          setProfile(data);
+        }
       }
     } catch (err) {
       console.error('Error fetching profile:', err);

@@ -43,11 +43,22 @@ export class PermissionsGuard implements CanActivate {
     if (!dbUser) {
       // Auto-create profile if missing (fallback for Supabase Auth users)
       try {
+        // Ensure default role exists
+        let defaultRole = await this.prisma.role.findFirst({
+          where: { name: { equals: 'user', mode: 'insensitive' } }
+        });
+
+        if (!defaultRole) {
+          defaultRole = await this.prisma.role.create({
+            data: { name: 'user', description: 'Default user role' }
+          });
+        }
+
         dbUser = await this.prisma.user.create({
           data: {
             id: user.id,
             email: user.email,
-            roleId: (await this.prisma.role.findFirst({ where: { name: 'user' } }))?.id
+            roleId: defaultRole.id
           },
           include: {
             role: {
