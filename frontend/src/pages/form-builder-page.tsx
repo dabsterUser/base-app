@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +32,8 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import axios from 'axios';
+import { supabase } from '@/lib/supabase';
 
 interface FormField {
   id: string;
@@ -142,7 +142,6 @@ const FormBuilderPage = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Load first existing form if available for demo purposes
     fetchForm();
   }, []);
 
@@ -156,7 +155,6 @@ const FormBuilderPage = () => {
       if (data) {
         setFormId(data.id);
         setFormTitle(data.title);
-        // Map backend fields to frontend structure if necessary
         setFields(data.fields || []);
       }
     } catch (err) {

@@ -20,13 +20,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      // Use our backend to fetch the profile instead of direct Supabase DB access
+      // this avoids PGRST205 errors and keeps logic centralized
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
 
-      if (data) setProfile(data);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data);
+      }
     } catch (err) {
       console.error('Error fetching profile:', err);
     }

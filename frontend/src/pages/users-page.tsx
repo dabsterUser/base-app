@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button';
 const UsersPage = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAddingUser, setIsAddingUser] = useState(false);
+  const [newUser, setNewUser] = useState({ email: '', roleId: '' });
 
   useEffect(() => {
     fetchUsers();
@@ -39,6 +41,25 @@ const UsersPage = () => {
     }
   };
 
+  const handleAddUser = async () => {
+    const session = await supabase.auth.getSession();
+    const token = session.data.session?.access_token;
+    if (!token) return;
+
+    try {
+      await axios.post(`${import.meta.env.VITE_API_URL}/users`, newUser, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIsAddingUser(false);
+      setNewUser({ email: '', roleId: '' });
+      fetchUsers();
+      alert('User added successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to add user.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -46,11 +67,41 @@ const UsersPage = () => {
           <h2 className="text-3xl font-bold tracking-tight">Users, Roles & Permissions</h2>
           <p className="text-muted-foreground">Manage system users, assign roles, and define granular permissions.</p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setIsAddingUser(true)}>
           <UserPlus className="h-4 w-4" />
           Add User
         </Button>
       </div>
+
+      {isAddingUser && (
+        <Card className="border-primary/50 bg-primary/5">
+          <CardHeader>
+            <CardTitle>Create New User</CardTitle>
+          </CardHeader>
+          <CardContent className="flex gap-4 items-end">
+            <div className="space-y-2 flex-1">
+              <Label>Email Address</Label>
+              <Input
+                placeholder="email@example.com"
+                value={newUser.email}
+                onChange={e => setNewUser({...newUser, email: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2 w-48">
+              <Label>Initial Role ID</Label>
+              <Input
+                placeholder="UUID of role"
+                value={newUser.roleId}
+                onChange={e => setNewUser({...newUser, roleId: e.target.value})}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleAddUser}>Save User</Button>
+              <Button variant="ghost" onClick={() => setIsAddingUser(false)}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

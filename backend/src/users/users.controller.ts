@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Put, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Delete, Query, UseGuards, Request } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseGuard } from '../auth/supabase.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
@@ -8,6 +8,14 @@ import { CheckPermission } from '../auth/permissions.decorator';
 @UseGuards(SupabaseGuard, PermissionsGuard)
 export class UsersController {
   constructor(private prisma: PrismaService) {}
+
+  @Get('profile')
+  async getProfile(@Request() req: any) {
+    return this.prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { role: true, permissions: { include: { permission: true } } }
+    });
+  }
 
   @Get()
   @CheckPermission('users.view')
