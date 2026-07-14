@@ -33,8 +33,36 @@ export class PermissionsGuard implements CanActivate {
     }
 
     // BOOTSTRAP BYPASS: If email matches config admin, grant all
-    const adminEmail = process.env.INITIAL_ADMIN_EMAIL || 'admin@example.com';
-    if (user.email === adminEmail) {
+    const adminEmail = process.env.INITIAL_ADMIN_EMAIL;
+    console.log(`[RBAC] User: ${user.email}, Required Permission: ${requiredPermission}`);
+
+    if (adminEmail && user.email === adminEmail) {
+      console.log(`[RBAC] Bootstrap bypass granted for ${user.email}`);
+
+      // Ensure the user is promoted to super admin in the DB if they aren't already
+      const existingUser = await this.prisma.user.findUnique({
+        where: { id: user.id },
+        include: { role: true }
+      });
+
+      if (existingUser && existingUser.role?.name.toLowerCase() !== 'super admin') {
+        let superAdminRole = await this.prisma.role.findFirst({
+          where: { name: { equals: 'super admin', mode: 'insensitive' } }
+        });
+
+        if (!superAdminRole) {
+          superAdminRole = await this.prisma.role.create({
+            data: { name: 'super admin', description: 'Full system access' }
+          });
+        }
+
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { roleId: superAdminRole.id }
+        });
+        console.log(`[RBAC] Promoted ${user.email} to super admin`);
+      }
+
       return true;
     }
 
@@ -62,8 +90,8 @@ export class PermissionsGuard implements CanActivate {
     if (!dbUser) {
       // Auto-create profile if missing (fallback for Supabase Auth users)
       try {
-        const adminEmail = process.env.INITIAL_ADMIN_EMAIL || 'admin@example.com';
-        const isInitialAdmin = user.email === adminEmail;
+        const adminEmail = process.env.INITIAL_ADMIN_EMAIL;
+        const isInitialAdmin = adminEmail && user.email === adminEmail;
 
         const userCount = await this.prisma.user.count();
         const isFirstUser = userCount === 0;
@@ -116,11 +144,13 @@ export class PermissionsGuard implements CanActivate {
 
     // SUPER ADMIN BYPASS: Grant access if role name is super admin
     if (dbUser.role?.name.toLowerCase() === 'super admin') {
+      console.log(`[RBAC] Super Admin bypass granted for ${user.email}`);
       return true;
     }
 
     // Check role-based permissions
     const hasRolePermission = dbUser.role?.permissions.some(p => p.permission.name === requiredPermission);
+    console.log(`[RBAC] Role permission check for ${user.email}: ${!!hasRolePermission}`);
 
     return !!hasRolePermission;
   }

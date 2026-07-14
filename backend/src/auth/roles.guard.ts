@@ -20,8 +20,8 @@ export class RolesGuard implements CanActivate {
     }
 
     // BOOTSTRAP BYPASS
-    const adminEmail = process.env.INITIAL_ADMIN_EMAIL || 'admin@example.com';
-    if (user.email === adminEmail) {
+    const adminEmail = process.env.INITIAL_ADMIN_EMAIL;
+    if (adminEmail && user.email === adminEmail) {
       return true;
     }
 
