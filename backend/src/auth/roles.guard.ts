@@ -19,6 +19,12 @@ export class RolesGuard implements CanActivate {
         return false;
     }
 
+    // BOOTSTRAP BYPASS
+    const adminEmail = process.env.INITIAL_ADMIN_EMAIL || 'admin@example.com';
+    if (user.email === adminEmail) {
+      return true;
+    }
+
     // Fetch user with role
     const dbUser = await this.prisma.user.findUnique({
       where: { id: user.id },

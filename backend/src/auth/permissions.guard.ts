@@ -32,6 +32,12 @@ export class PermissionsGuard implements CanActivate {
       return false;
     }
 
+    // BOOTSTRAP BYPASS: If email matches config admin, grant all
+    const adminEmail = process.env.INITIAL_ADMIN_EMAIL || 'admin@example.com';
+    if (user.email === adminEmail) {
+      return true;
+    }
+
     // Fetch user with roles and permissions
     let dbUser = await this.prisma.user.findUnique({
       where: { id: user.id },
@@ -56,9 +62,12 @@ export class PermissionsGuard implements CanActivate {
     if (!dbUser) {
       // Auto-create profile if missing (fallback for Supabase Auth users)
       try {
+        const adminEmail = process.env.INITIAL_ADMIN_EMAIL || 'admin@example.com';
+        const isInitialAdmin = user.email === adminEmail;
+
         const userCount = await this.prisma.user.count();
         const isFirstUser = userCount === 0;
-        const roleName = isFirstUser ? 'super admin' : 'user';
+        const roleName = (isFirstUser || isInitialAdmin) ? 'super admin' : 'user';
 
         // Ensure role exists
         let role = await this.prisma.role.findFirst({
